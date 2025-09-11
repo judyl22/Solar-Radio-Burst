@@ -1,3 +1,5 @@
 */.ipynb_checkpoints
 .ipynb_checkpoints
 .DS_Store
+psp_data
+psp_data/*
