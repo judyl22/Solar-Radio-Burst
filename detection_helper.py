@@ -18,6 +18,7 @@ from helper import find_closest_index_dt
 
 import math
 from scipy.interpolate import interp1d
+from numpy.linalg import LinAlgError
 
 def return_arr(start='2023-01-03', end='2023-08-20'):
     time_clip = True
@@ -174,3 +175,193 @@ def find_unit(freq_log_exp, times_arr):
     times_gap_UNX = UTC_to_UNX(end_time) - UTC_to_UNX(start_time)
     # times_gap = UNX_to_UTC(times_gap_UNX).minute
     return freq_gap, times_gap_UNX
+
+def hough_angle(times_arr, freq_log, freq_change=14718120.082815735, time_duration=2699.503105590062):
+    # times in second
+    # times_arr in UTC
+    target_freq = max(freq_log) - freq_change
+    target_freq_index = 0
+    while target_freq_index < len(freq_log) and freq_log[target_freq_index] < target_freq:
+        target_freq_index += 1
+    target_freq_index_reverse = len(freq_log) - target_freq_index
+
+    times_arr_UNX = UTC_to_UNX(times_arr)
+    target_time = times_arr_UNX[1] + time_duration
+    target_time_index = 0
+    while target_time_index < len(times_arr_UNX) and times_arr_UNX[target_time_index] < target_time:
+        target_time_index += 1
+
+    angle_rad = math.atan2(-target_freq_index_reverse, target_time_index)
+    angle_deg = math.degrees(angle_rad) + 90
+
+    return target_freq_index_reverse, target_time_index, angle_deg
+
+def plot_bmap(times_arr, freq_log_exp, bmap, lines=None):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    p = ax.pcolormesh(times_arr, freq_log_exp, 1-bmap.T, shading="auto", cmap="gray")
+    plt.colorbar(p, ax=ax, label="Binary")
+
+    if lines:
+        for (x0, y0), (x1, y1) in lines:
+            t0, t1 = times_arr[y0], times_arr[y1]
+            f0, f1 = freq_log_exp[x0], freq_log_exp[x1]
+            ax.plot([t0, t1], [f0, f1], color='red')
+    
+    plt.xlabel("Time")
+    plt.ylabel("Frequency [Hz]")
+    # plt.yscale('log')
+    plt.title("Grouped Bursts")
+    # plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def plot_spectrum(times_arr, freq_log_exp, data_arr_log, lines=None):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    p = ax.pcolormesh(times_arr, freq_log_exp, data_arr_log.T, norm=LogNorm())
+    plt.colorbar(p, ax=ax, label="Power")
+
+    if lines:
+        for (x0, y0), (x1, y1) in lines:
+            t0, t1 = times_arr[y0], times_arr[y1]
+            f0, f1 = freq_log_exp[x0], freq_log_exp[x1]
+            ax.plot([t0, t1], [f0, f1], color='red')
+    
+    plt.xlabel("Time")
+    plt.ylabel("Frequency [Hz]")
+    # plt.yscale('log')
+    plt.title("Grouped Bursts")
+    # plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def longest_line(lines):
+    longest_line = None
+    longest_length_sqr = 0
+
+    for line in lines:
+        (x0, y0), (x1, y1) = line
+        dx = x1 - x0
+        dy = y1 - y0
+        length_sqr = dx*dx + dy*dy
+        if length_sqr > longest_length_sqr:
+            longest_length_sqr = length_sqr
+            longest_line = line
+
+    longest_length = math.sqrt(longest_length_sqr) 
+    return longest_line, longest_length_sqr
+
+
+def left_pts(lines, times_arr, freq_arr):
+    pts_idx = []
+    pts_val = []
+    seen_x = set()
+
+    for (x0, y0), (x1, y1) in lines:
+        # right most
+        # xL, yL = x0, y0
+        # left most
+        x_left, y_left = x1, y1
+
+        if x_left in seen_x:
+            continue
+        seen_x.add(x_left)
+
+        pts_idx.append((x_left, y_left))
+        pts_val.append((times_arr[y_left], freq_arr[x_left]))
+
+    pts_idx = np.array(pts_idx, dtype=int)
+    pts_val = np.array(pts_val, dtype=object)
+
+    order = np.argsort(pts_val[:, 1].astype(float))[::-1]
+
+    return pts_idx[order], pts_val[order]
+
+def right_pts(lines, times_arr, freq_arr):
+    pts_idx = []
+    pts_val = []
+    seen_x = set()
+
+    for (x0, y0), (x1, y1) in lines:
+        # right most
+        x_right, y_right = x0, y0
+        # left most
+        # x_left, y_left = x1, y1
+
+        if x_right in seen_x:
+            continue
+        seen_x.add(x_right)
+
+        pts_idx.append((x_right, y_right))
+        pts_val.append((times_arr[y_right], freq_arr[x_right]))
+
+    pts_idx = np.array(pts_idx, dtype=int)
+    pts_val = np.array(pts_val, dtype=object)
+
+    order = np.argsort(pts_val[:, 1].astype(float))[::-1]
+
+    return pts_idx[order], pts_val[order]
+
+def plot_boundary_pts(times_arr, freq_log_exp, bmap, pts_val_left, pts_val_right):
+    fig, ax = plt.subplots(figsize=(10, 6))    
+    p = ax.pcolormesh(times_arr, freq_log_exp, 1-bmap.T, shading="auto", cmap="gray")
+    plt.colorbar(p, ax=ax, label="Binary")
+    
+    ax.scatter(pts_val_left[:,0], pts_val_left[:,1], s=10)
+    ax.scatter(pts_val_right[:,0], pts_val_right[:,1], s=10)
+    
+    plt.xlabel("Time")
+    plt.ylabel("Frequency [Hz]")
+    # plt.yscale('log')
+    plt.title("Grouped Bursts")
+    # plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+def plot_line_slice(bmap, times_arr, freq_log_exp, data_arr_log, x_slice=[0,800], y_slice=60, plot=True):
+    # y_slice is the index that seperate high and low
+    
+    x_slice_start = x_slice[0]
+    x_slice_stop = x_slice[1]
+    bmap_slice = bmap[x_slice_start:x_slice_stop]
+    times_arr_slice = times_arr[x_slice_start:x_slice_stop]
+    data_arr_log_slice = data_arr_log[x_slice_start:x_slice_stop]
+    
+    # theta=np.deg2rad(np.linspace(39, 40, 120))
+    # line_gap=40
+    theta=np.deg2rad(np.linspace(30, 40, 2000))
+    lines_high = hough_detect(bmap_slice[:, y_slice:], data_arr_log_slice, threshold=1, line_gap=30, line_length=80, theta=theta)
+    longest_line_high, longtest_line_length_high = longest_line(lines_high)
+    
+    # theta=np.deg2rad(np.linspace(4, 5, 120))
+    theta=np.deg2rad(np.linspace(3, 6, 2000))
+    lines_low = hough_detect(bmap_slice[:, :y_slice], data_arr_log_slice, threshold=1, line_gap=30, line_length=80, theta=theta)
+    longest_line_low, longtest_line_length_low = longest_line(lines_low)
+
+    if (longest_line_high is not None) and (longest_line_low is not None):
+        (x1, y1), (x2, y2) = longest_line_high
+        longest_line_high = ((x1 + y_slice, y1), (x2 + y_slice, y2))
+    
+        (x1, y1), (x2, y2) = longest_line_low
+        longest_line_low = ((x1, y1), (x2, y2))
+        
+        if plot == True:
+            plot_bmap(times_arr_slice, freq_log_exp, bmap_slice, [longest_line_low, longest_line_high])
+        return longest_line_low, longest_line_high
+    else:
+        return None, None
+
+def all_lines_day(bmap, times_arr, freq_log_exp, data_arr_log):
+    i = 0
+    lines = []
+    while i < (len(times_arr)-501):
+        longest_line_low, longest_line_high = plot_line_slice(bmap, times_arr, freq_log_exp, data_arr_log, x_slice = [0+i,800+i], plot=False)
+        if (longest_line_high is not None) and (longest_line_low is not None):
+            (x1, y1), (x2, y2) = longest_line_high
+            longest_line_high = ((x1, y1+i), (x2, y2+i))
+            
+            (x1, y1), (x2, y2) = longest_line_low
+            longest_line_low = ((x1, y1+i), (x2, y2+i))
+            lines.append(longest_line_high)
+            lines.append(longest_line_low)
+        i = i + 250
+    return lines
