@@ -12,7 +12,7 @@ The repository contains several experimental approaches, including logarithmic f
 | `helper.py` | Shared utilities, including UTC/Unix time conversion and array operations. |
 | `detection_*.ipynb`, `dection_*.ipynb`, `dectection_*.ipynb` | Detection experiments and alternative preprocessing and extraction methods. Filenames retain their original spelling. |
 | `dection_prog_new_extract4.ipynb` | Burst extraction experiments using shared helpers and curvature/ACBone routines. |
-| `dection_prog_new_extract5_new_curvature.ipynb.ipynb` | Further gradient, transition-point, grouping, and burst-track extraction experiments. The doubled extension is part of the filename. |
+| `dection_prog_new_extract5_new_curvature.ipynb` | Further gradient, transition-point, grouping, and burst-track extraction experiments. |
 | `PJCurvature_demo.ipynb` | Curvature demonstration. |
 | `plotting notebooks/` | PSP and STEREO plotting examples and event inspection. |
 | `calculation notebooks/` | Drift-rate calculations and event/geometry investigations. |
@@ -39,7 +39,7 @@ Open root-level detection notebooks with the repository root as their working di
 
 ## Detecting bursts in PSP data
 
-Start with `dection_prog_new_extract4.ipynb` for extraction experiments, or `dection_prog_new_extract5_new_curvature.ipynb.ipynb` for gradient and transition-point methods. Review the selected date range and execute the required cells in order.
+Start with `dection_prog_new_extract4.ipynb` for extraction experiments, or `dection_prog_new_extract5_new_curvature.ipynb` for gradient and transition-point methods. Review the selected date range and execute the required cells in order.
 
 The shared preprocessing workflow can also be run in a notebook cell from the repository root:
 
