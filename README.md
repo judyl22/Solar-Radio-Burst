@@ -104,3 +104,23 @@ The script includes hard-coded row exclusions for the supplied dataset. Review t
 - Some cells use interactive plotting backends such as `%matplotlib tk`; select a backend supported by your environment.
 - Notebook outputs and saved figures record experiments and may reflect earlier parameter choices. Rerun the relevant cells to reproduce a result with your settings.
 - Downloaded spacecraft observations are separate from the included event tables and figures.
+
+## References and acknowledgments
+
+We acknowledge Peijin Zhang's [type3detect](https://github.com/peijin94/type3detect) project for its methods and code for automatic Type III radio burst detection using the Hough transform and active-contour backbone extraction (ACBone).
+
+The upstream repository requests citation of the following paper when using its ideas or code:
+
+Zhang, P. J., Wang, C. B., & Ye, L. (2018). [A type III radio burst automatic analysis system and statistic results for a half solar cycle with Nançay Decameter Array data](https://doi.org/10.1051/0004-6361/201833260). *Astronomy & Astrophysics*, **618**, A165.
+
+```bibtex
+@article{zhang2018type,
+  author = {Zhang, P. J. and Wang, C. B. and Ye, L.},
+  title = {A type III radio burst automatic analysis system and statistic results for a half solar cycle with Nan{\c{c}}ay Decameter Array data},
+  journal = {Astronomy & Astrophysics},
+  volume = {618},
+  pages = {A165},
+  year = {2018},
+  doi = {10.1051/0004-6361/201833260}
+}
+```
